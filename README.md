@@ -1,44 +1,49 @@
-# ITMO Big Data Infrastructure — Lab 6 (PySpark + MongoDB)
+# ITMO Big Data Infrastructure — Lab 7 (Data Mart on Scala Spark)
 
-Лабораторная работа №6: реализация схемы **модель ↔ источник данных**,
-где источником выступает **MongoDB**, а модель реализована на **PySpark (KMeans)**.
+Лабораторная работа №7: интеграция схемы **модель → витрина данных → источник**.
+
+- Источник данных: MongoDB
+- Витрина данных: Scala + Spark (`datamart`)
+- Модель: PySpark KMeans (`src/kmeans_clustering.py`)
 
 ## Что реализовано
 
-- Выгрузка исходных данных из MongoDB при каждом запуске модели.
-- Запуск PySpark-пайплайна предобработки и кластеризации.
-- Загрузка результатов модели в MongoDB сразу после завершения.
-- Протокол взаимодействия и форматы хранения данных.
-- Docker-конфигурация для запуска `MongoDB + model pipeline`.
+1. Разработана витрина данных на Scala (Spark), которая:
+   - формирует запросы к MongoDB,
+   - выполняет предобработку,
+   - подготавливает единый формат данных для модели,
+   - загружает результаты модели обратно в MongoDB.
+2. Предобработка перенесена на сторону витрины.
+3. В модельном контуре ЛР7 используется только готовый датасет из витрины.
+4. Добавлен протокол взаимодействия и форматы хранения (`PROTOCOL_LAB7.md`).
+5. Добавлен Docker-контур для запуска `модель + витрина + источник`.
 
 ## Структура
 
-- `src/mongo_protocol.py` — протокол взаимодействия с MongoDB.
-- `src/lab6_mongo_pipeline.py` — оркестратор ЛР6.
-- `src/check_mongo_results.py` — проверка наполнения коллекций.
-- `src/preprocess_openfoodfacts.py` — предобработка.
-- `src/kmeans_clustering.py` — KMeans.
-- `src/download_openfoodfacts_sample.py` — загрузка sample OpenFoodFacts.
-- `configs/mongo_config.yaml` — Mongo-конфиг для локального запуска.
-- `configs/mongo_config.docker.yaml` — Mongo-конфиг для Docker.
-- `configs/spark_config.yaml` — Spark-конфиг в отдельном файле.
-- `PROTOCOL_LAB6.md` — формальный протокол взаимодействия.
+### Scala витрина
+- `datamart/build.sbt`
+- `datamart/conf/datamart-local.conf`
+- `datamart/conf/datamart-docker.conf`
+- `datamart/src/main/scala/itmo/lab7/Main.scala`
+- `datamart/src/main/scala/itmo/lab7/service/DataMartService.scala`
+- `datamart/src/main/scala/itmo/lab7/mongo/MongoGateway.scala`
+- `datamart/src/main/scala/itmo/lab7/model/FeatureRecord.scala`
+- `datamart/src/main/scala/itmo/lab7/config/DataMartConfig.scala`
 
-## Конфигурация
+### Python модель и orchestration
+- `src/lab7_mart_pipeline.py` — общий запуск ЛР7 пайплайна
+- `src/kmeans_clustering.py` — модель KMeans
+- `src/download_openfoodfacts_sample.py` — sample для bootstrap источника (при необходимости)
 
-### `configs/app_config.yaml`
-Пути к данным, параметры sampling и KMeans.
+### Конфиги
+- `configs/app_config.yaml` — модельные пути/параметры
+- `configs/spark_config.yaml` — Spark-конфиг модели
+- `configs/lab7_pipeline.yaml` — настройки orchestration
+- `configs/mongo_config.yaml` — MongoDB (локально)
 
-### `configs/spark_config.yaml`
-Spark master и Spark-параметры (shuffle/adaptive/memory/serializer).
+## Запуск локально
 
-### `configs/mongo_config.yaml`
-- URI подключения к MongoDB
-- Имя БД
-- Имена коллекций (`source`, `results`, `runs`)
-- Параметры пайплайна (`bootstrap_lines`, `write_batch_size`)
-
-## Локальный запуск
+### 1) Установка зависимостей
 
 ```bash
 python3 -m venv .venv
@@ -46,31 +51,34 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-1) Поднять MongoDB в Docker:
+### 2) Поднять MongoDB
+
 ```bash
 docker compose up -d mongodb
 ```
 
-2) Запустить пайплайн ЛР6:
+### 3) Запустить ЛР7 пайплайн
+
 ```bash
-python3 -m src.lab6_mongo_pipeline --bootstrap-if-empty
+python3 -m src.lab7_mart_pipeline --bootstrap-if-empty
 ```
 
-3) Проверить, что данные и результаты записаны в MongoDB:
-```bash
-python3 -m src.check_mongo_results
-```
+Что делает команда:
+- при необходимости подготавливает sample-файл для bootstrap;
+- запускает Scala витрину (`prepare`), которая забирает source, делает preprocessing и пишет parquet;
+- запускает модель KMeans на parquet;
+- запускает Scala витрину (`publish`), которая отправляет результаты модели в MongoDB.
 
-## Запуск полностью в Docker
+## Запуск в Docker
 
 ```bash
-docker compose up --build model-pipeline
+docker compose -f docker-compose.lab7.yml up --build model-datamart-pipeline
 ```
 
 ## Дистрибутив
 
 ```bash
-python3 scripts/make_distribution.py --lab 6
+python3 scripts/make_distribution.py --lab 7
 ```
 
-Архив: `dist/lab6_distribution.zip`.
+Архив: `dist/lab7_distribution.zip`.

@@ -78,7 +78,8 @@ class KMeansClusteringJob:
 
         if not input_path.exists():
             raise FileNotFoundError(
-                f"Processed dataset not found at {input_path}. Run src/preprocess_openfoodfacts.py first."
+                f"Processed dataset not found at {input_path}. "
+                "For Lab7 run the data mart prepare step first."
             )
 
         dataset = spark.read.parquet(str(input_path))

@@ -1,0 +1,28 @@
+services:
+  mongodb:
+    image: mongo:8.0
+    container_name: lab7-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - lab7_mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  model-datamart-pipeline:
+    build:
+      context: .
+      dockerfile: docker/lab7/Dockerfile
+    container_name: lab7-model-datamart-pipeline
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+    command: ["python3", "-m", "src.lab7_mart_pipeline", "--bootstrap-if-empty", "--datamart-config", "conf/datamart-docker.conf"]
+
+volumes:
+  lab7_mongo_data:
