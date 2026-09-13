@@ -63,6 +63,11 @@ docker compose up -d mongodb
 python3 -m src.lab7_mart_pipeline --bootstrap-if-empty
 ```
 
+Если `sbt` не в `PATH`, можно задать путь так:
+```bash
+SBT_BIN=/path/to/sbt python3 -m src.lab7_mart_pipeline --bootstrap-if-empty
+```
+
 Что делает команда:
 - при необходимости подготавливает sample-файл для bootstrap;
 - запускает Scala витрину (`prepare`), которая забирает source, делает preprocessing и пишет parquet;
