@@ -14,6 +14,9 @@ data/output/*
 # Spark local output
 spark-warehouse/
 metastore_db/
+datamart/target/
+datamart/project/target/
+datamart/project/project/
 
 # Distribution
 *.zip

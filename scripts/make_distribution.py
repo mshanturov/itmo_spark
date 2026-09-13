@@ -8,12 +8,14 @@ INCLUDE_PATHS = [
     "src",
     "scripts",
     "configs",
+    "datamart",
+    "docker",
     "notebooks",
     "Dockerfile",
     "docker-compose.yml",
+    "docker-compose.lab7.yml",
     "requirements.txt",
     "README.md",
-    "PROTOCOL_LAB6.md",
 ]
 
 
@@ -36,7 +38,8 @@ def main() -> None:
     args = parse_args()
     dist_path = Path(f"dist/lab{args.lab}_distribution.zip")
     report_name = f"REPORT_LAB{args.lab}.md"
-    dynamic_paths = INCLUDE_PATHS + [report_name]
+    protocol_name = f"PROTOCOL_LAB{args.lab}.md"
+    dynamic_paths = INCLUDE_PATHS + [report_name, protocol_name]
 
     dist_path.parent.mkdir(parents=True, exist_ok=True)
     with ZipFile(dist_path, "w", compression=ZIP_DEFLATED) as archive:
