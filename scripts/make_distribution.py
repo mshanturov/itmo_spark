@@ -7,8 +7,8 @@ DIST_PATH = Path("dist/lab5_distribution.zip")
 INCLUDE_PATHS = [
     "src",
     "scripts",
+    "configs",
     "notebooks",
-    "config.yaml",
     "requirements.txt",
     "README.md",
     "REPORT_LAB5.md",

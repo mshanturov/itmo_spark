@@ -1,0 +1,8 @@
+master: "local[*]"
+default_configs:
+  spark.sql.shuffle.partitions: "8"
+  spark.sql.adaptive.enabled: "true"
+  spark.driver.memory: "2g"
+  spark.executor.memory: "2g"
+  spark.serializer: "org.apache.spark.serializer.KryoSerializer"
+  spark.ui.showConsoleProgress: "true"

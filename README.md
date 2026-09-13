@@ -1,17 +1,40 @@
 # ITMO Big Data Infrastructure — Lab 5 (PySpark KMeans)
 
-Лабораторная работа №5: разработка Spark-приложения на PySpark,
-проверка Spark компонентов (WordCount) и построение модели кластеризации (KMeans)
-на данных OpenFoodFacts.
+Лабораторная работа №5: Spark-приложение на PySpark,
+проверка Spark компонентов (WordCount) и кластеризация OpenFoodFacts с помощью KMeans.
 
-## Структура
+## Что улучшено по замечаниям
 
-- `src/wordcount.py` — проверка работоспособности Spark (WordCount).
-- `src/download_openfoodfacts_sample.py` — загрузка сэмпла OpenFoodFacts адекватного размера.
-- `src/preprocess_openfoodfacts.py` — предобработка и формирование признаков для кластеризации.
-- `src/kmeans_clustering.py` — подбор K и кластеризация KMeans.
-- `src/run_pipeline.py` — последовательный запуск всех этапов.
-- `config.yaml` — настройки источника данных, Spark и KMeans.
+- Spark-конфиг вынесен в отдельный файл: `configs/spark_config.yaml`.
+- Бизнес-конфиг вынесен отдельно: `configs/app_config.yaml`.
+- Исходники декомпозированы по файлам и оформлены в OOP-стиле (job-классы).
+- Нет широких `except Exception` в коде.
+- Добавлен шаблон конфига для ЛР8: `configs/spark_config_lab8_template.yaml`.
+
+## Структура проекта
+
+- `src/settings.py` — dataclass-настройки и загрузка конфигов.
+- `src/spark_session_factory.py` — фабрика SparkSession.
+- `src/openfoodfacts_features.py` — схема, признаки и их обоснование.
+- `src/wordcount.py` — класс `WordCountJob`.
+- `src/download_openfoodfacts_sample.py` — класс `OpenFoodFactsSampler`.
+- `src/preprocess_openfoodfacts.py` — класс `OpenFoodFactsPreprocessor`.
+- `src/kmeans_clustering.py` — класс `KMeansClusteringJob`.
+- `src/run_pipeline.py` — класс `Lab5Pipeline` для последовательного запуска.
+
+## Конфигурация
+
+### `configs/app_config.yaml`
+Содержит пути к данным, параметры сэмплирования и KMeans.
+
+### `configs/spark_config.yaml`
+Содержит `master` и Spark-параметры:
+- `spark.sql.shuffle.partitions`
+- `spark.sql.adaptive.enabled`
+- `spark.driver.memory`
+- `spark.executor.memory`
+- `spark.serializer`
+- `spark.ui.showConsoleProgress`
 
 ## Установка
 
@@ -21,43 +44,48 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-> Для Windows можно использовать `py -3.11` вместо `python3`.
-> Подробная настройка PySpark на Windows:  
-> https://sparkbyexamples.com/pyspark/how-to-install-and-run-pyspark-onwindows/
+Для Windows можно использовать `py -3.11` вместо `python3`.
 
-## Запуск проверки Spark (WordCount)
+## Запуск
 
-```bash
-python3 src/wordcount.py
-```
-
-Результат сохраняется в `data/output/wordcount_result`.
-
-## Запуск пайплайна кластеризации
-
-Пошагово:
+### Проверка Spark (WordCount)
 
 ```bash
-python3 src/download_openfoodfacts_sample.py
-python3 src/preprocess_openfoodfacts.py
-python3 src/kmeans_clustering.py
+python3 -m src.wordcount
 ```
 
-Или всё сразу:
+Результат: `data/output/wordcount_result`.
+
+### Кластеризация (пошагово)
 
 ```bash
-python3 src/run_pipeline.py
+python3 -m src.download_openfoodfacts_sample
+python3 -m src.preprocess_openfoodfacts
+python3 -m src.kmeans_clustering
 ```
 
-## Выходные артефакты
+### Полный пайплайн
 
-- `data/raw/openfoodfacts_sample.jsonl` — сэмпл исходных данных.
-- `data/processed/openfoodfacts_features.parquet` — очищенные признаки.
-- `data/output/openfoodfacts_clusters.parquet` — кластерные предсказания.
-- `data/output/cluster_metrics.json` — метрики (silhouette для каждого K).
-- `data/output/cluster_centers.json` — центры кластеров.
+```bash
+python3 -m src.run_pipeline
+```
 
-## Сборка дистрибутива
+## Почему выбраны эти фичи
+
+Использованы 6 числовых признаков на 100 г (`energy_kcal_100g`, `fat_100g`,
+`carbohydrates_100g`, `sugars_100g`, `proteins_100g`, `salt_100g`), потому что:
+- они доступны у большого числа продуктов;
+- это базовые пищевые характеристики, хорошо разделяющие категории продуктов;
+- признаки числовые и подходят для KMeans после масштабирования.
+
+## Артефакты
+
+- `data/processed/openfoodfacts_features.parquet`
+- `data/output/openfoodfacts_clusters.parquet`
+- `data/output/cluster_metrics.json`
+- `data/output/cluster_centers.json`
+
+## Дистрибутив
 
 ```bash
 python3 scripts/make_distribution.py

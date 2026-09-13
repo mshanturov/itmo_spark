@@ -9,9 +9,6 @@ data:
 sampling:
   max_lines: 50000
 
-spark:
-  master: "local[*]"
-
 clustering:
   k_values: [2, 3, 4, 5, 6]
   seed: 42

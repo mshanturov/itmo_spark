@@ -1,0 +1,11 @@
+# Шаблон Spark-конфига для переиспользования в ЛР8.
+# Можно скопировать в отдельный spark_config.yaml и донастроить под задачи ЛР8.
+master: "local[*]"
+default_configs:
+  spark.sql.shuffle.partitions: "12"
+  spark.sql.adaptive.enabled: "true"
+  spark.sql.autoBroadcastJoinThreshold: "-1"
+  spark.driver.memory: "3g"
+  spark.executor.memory: "3g"
+  spark.serializer: "org.apache.spark.serializer.KryoSerializer"
+  spark.ui.showConsoleProgress: "true"
