@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import os
 from pathlib import Path
 import subprocess
 
@@ -55,6 +56,7 @@ def load_pipeline_settings(path: str = "configs/lab7_pipeline.yaml") -> DataMart
 class Lab7Pipeline:
     def __init__(self, settings: DataMartPipelineSettings) -> None:
         self._settings = settings
+        self._sbt_command = os.getenv("SBT_BIN", "sbt")
         model_settings = load_settings(settings.app_config, settings.spark_config)
         spark_factory = SparkSessionFactory(model_settings.spark)
         self._sampler = OpenFoodFactsSampler(model_settings)
@@ -65,11 +67,16 @@ class Lab7Pipeline:
         return f"lab7-run-{timestamp}"
 
     def _run_datamart_command(self, args: list[str]) -> None:
-        subprocess.run(
-            ["sbt", "-batch", f"runMain {self._settings.main_class} {' '.join(args)}"],
-            cwd=self._settings.project_dir,
-            check=True,
-        )
+        try:
+            subprocess.run(
+                [self._sbt_command, "-batch", f"runMain {self._settings.main_class} {' '.join(args)}"],
+                cwd=self._settings.project_dir,
+                check=True,
+            )
+        except FileNotFoundError as error:
+            raise RuntimeError(
+                "SBT executable not found. Install sbt or set SBT_BIN environment variable."
+            ) from error
 
     def run(self, bootstrap_if_empty: bool, datamart_config_path: str) -> None:
         run_id = self._run_id()
