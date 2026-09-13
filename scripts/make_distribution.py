@@ -1,17 +1,19 @@
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 
-DIST_PATH = Path("dist/lab5_distribution.zip")
 INCLUDE_PATHS = [
     "src",
     "scripts",
     "configs",
     "notebooks",
+    "Dockerfile",
+    "docker-compose.yml",
     "requirements.txt",
     "README.md",
-    "REPORT_LAB5.md",
+    "PROTOCOL_LAB6.md",
 ]
 
 
@@ -24,17 +26,28 @@ def iter_files(base: Path):
                 yield path
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Build zip distribution for selected lab")
+    parser.add_argument("--lab", default="6", help="Lab number for report and output file naming")
+    return parser.parse_args()
+
+
 def main() -> None:
-    DIST_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with ZipFile(DIST_PATH, "w", compression=ZIP_DEFLATED) as archive:
-        for item in INCLUDE_PATHS:
+    args = parse_args()
+    dist_path = Path(f"dist/lab{args.lab}_distribution.zip")
+    report_name = f"REPORT_LAB{args.lab}.md"
+    dynamic_paths = INCLUDE_PATHS + [report_name]
+
+    dist_path.parent.mkdir(parents=True, exist_ok=True)
+    with ZipFile(dist_path, "w", compression=ZIP_DEFLATED) as archive:
+        for item in dynamic_paths:
             root = Path(item)
             if not root.exists():
                 continue
             for file_path in iter_files(root):
                 archive.write(file_path, arcname=file_path.as_posix())
 
-    print(f"Distribution created: {DIST_PATH}")
+    print(f"Distribution created: {dist_path}")
 
 
 if __name__ == "__main__":

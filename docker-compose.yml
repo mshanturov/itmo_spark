@@ -1,0 +1,26 @@
+services:
+  mongodb:
+    image: mongo:8.0
+    container_name: lab6-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  model-pipeline:
+    build: .
+    container_name: lab6-model-pipeline
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    volumes:
+      - ./data:/app/data
+    command: ["python3", "-m", "src.lab6_mongo_pipeline", "--mongo-config", "configs/mongo_config.docker.yaml", "--bootstrap-if-empty"]
+
+volumes:
+  mongo_data:

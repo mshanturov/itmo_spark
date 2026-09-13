@@ -1,0 +1,12 @@
+connection:
+  uri: "mongodb://localhost:27017"
+  database: "itmo_bigdata"
+
+collections:
+  source: "openfoodfacts_source"
+  results: "kmeans_results"
+  runs: "pipeline_runs"
+
+pipeline:
+  bootstrap_lines: 12000
+  write_batch_size: 500
