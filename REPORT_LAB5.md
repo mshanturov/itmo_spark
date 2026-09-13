@@ -52,4 +52,5 @@ PySpark-приложения с кластеризацией KMeans.
 ## 5. Ссылки
 
 - Репозиторий GitHub: `TODO`
+- Репозиторий GitHub: `https://github.com/mshanturov/itmo_spark`
 - Актуальный дистрибутив: `dist/lab5_distribution.zip`
