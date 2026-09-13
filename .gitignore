@@ -20,4 +20,4 @@ metastore_db/
 dist/
 !dist/
 !dist/.gitkeep
-!dist/lab5_distribution.zip
+!dist/lab*_distribution.zip
