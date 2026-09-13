@@ -1,0 +1,23 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Data artifacts
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/output/*
+!data/output/.gitkeep
+
+# Spark local output
+spark-warehouse/
+metastore_db/
+
+# Distribution
+*.zip
+dist/
+!dist/
+!dist/.gitkeep
+!dist/lab5_distribution.zip

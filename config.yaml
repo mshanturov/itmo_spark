@@ -1,0 +1,18 @@
+data:
+  source_url: "https://static.openfoodfacts.org/data/openfoodfacts-products.jsonl.gz"
+  raw_sample_jsonl: "data/raw/openfoodfacts_sample.jsonl"
+  processed_parquet: "data/processed/openfoodfacts_features.parquet"
+  predictions_parquet: "data/output/openfoodfacts_clusters.parquet"
+  metrics_json: "data/output/cluster_metrics.json"
+  centers_json: "data/output/cluster_centers.json"
+
+sampling:
+  max_lines: 50000
+
+spark:
+  master: "local[*]"
+
+clustering:
+  k_values: [2, 3, 4, 5, 6]
+  seed: 42
+  max_iter: 40
