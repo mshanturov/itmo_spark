@@ -1,42 +1,44 @@
-# ITMO Big Data Infrastructure — Lab 5 (PySpark KMeans)
+# ITMO Big Data Infrastructure — Lab 6 (PySpark + MongoDB)
 
-Лабораторная работа №5: Spark-приложение на PySpark,
-проверка Spark компонентов (WordCount) и кластеризация OpenFoodFacts с помощью KMeans.
+Лабораторная работа №6: реализация схемы **модель ↔ источник данных**,
+где источником выступает **MongoDB**, а модель реализована на **PySpark (KMeans)**.
 
-## Что улучшено по замечаниям
+## Что реализовано
 
-- Spark-конфиг вынесен в отдельный файл: `configs/spark_config.yaml`.
-- Бизнес-конфиг вынесен отдельно: `configs/app_config.yaml`.
-- Исходники декомпозированы по файлам и оформлены в OOP-стиле (job-классы).
-- Нет широких `except Exception` в коде.
-- Добавлен шаблон конфига для ЛР8: `configs/spark_config_lab8_template.yaml`.
+- Выгрузка исходных данных из MongoDB при каждом запуске модели.
+- Запуск PySpark-пайплайна предобработки и кластеризации.
+- Загрузка результатов модели в MongoDB сразу после завершения.
+- Протокол взаимодействия и форматы хранения данных.
+- Docker-конфигурация для запуска `MongoDB + model pipeline`.
 
-## Структура проекта
+## Структура
 
-- `src/settings.py` — dataclass-настройки и загрузка конфигов.
-- `src/spark_session_factory.py` — фабрика SparkSession.
-- `src/openfoodfacts_features.py` — схема, признаки и их обоснование.
-- `src/wordcount.py` — класс `WordCountJob`.
-- `src/download_openfoodfacts_sample.py` — класс `OpenFoodFactsSampler`.
-- `src/preprocess_openfoodfacts.py` — класс `OpenFoodFactsPreprocessor`.
-- `src/kmeans_clustering.py` — класс `KMeansClusteringJob`.
-- `src/run_pipeline.py` — класс `Lab5Pipeline` для последовательного запуска.
+- `src/mongo_protocol.py` — протокол взаимодействия с MongoDB.
+- `src/lab6_mongo_pipeline.py` — оркестратор ЛР6.
+- `src/check_mongo_results.py` — проверка наполнения коллекций.
+- `src/preprocess_openfoodfacts.py` — предобработка.
+- `src/kmeans_clustering.py` — KMeans.
+- `src/download_openfoodfacts_sample.py` — загрузка sample OpenFoodFacts.
+- `configs/mongo_config.yaml` — Mongo-конфиг для локального запуска.
+- `configs/mongo_config.docker.yaml` — Mongo-конфиг для Docker.
+- `configs/spark_config.yaml` — Spark-конфиг в отдельном файле.
+- `PROTOCOL_LAB6.md` — формальный протокол взаимодействия.
 
 ## Конфигурация
 
 ### `configs/app_config.yaml`
-Содержит пути к данным, параметры сэмплирования и KMeans.
+Пути к данным, параметры sampling и KMeans.
 
 ### `configs/spark_config.yaml`
-Содержит `master` и Spark-параметры:
-- `spark.sql.shuffle.partitions`
-- `spark.sql.adaptive.enabled`
-- `spark.driver.memory`
-- `spark.executor.memory`
-- `spark.serializer`
-- `spark.ui.showConsoleProgress`
+Spark master и Spark-параметры (shuffle/adaptive/memory/serializer).
 
-## Установка
+### `configs/mongo_config.yaml`
+- URI подключения к MongoDB
+- Имя БД
+- Имена коллекций (`source`, `results`, `runs`)
+- Параметры пайплайна (`bootstrap_lines`, `write_batch_size`)
+
+## Локальный запуск
 
 ```bash
 python3 -m venv .venv
@@ -44,51 +46,31 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Для Windows можно использовать `py -3.11` вместо `python3`.
-
-## Запуск
-
-### Проверка Spark (WordCount)
-
+1) Поднять MongoDB в Docker:
 ```bash
-python3 -m src.wordcount
+docker compose up -d mongodb
 ```
 
-Результат: `data/output/wordcount_result`.
-
-### Кластеризация (пошагово)
-
+2) Запустить пайплайн ЛР6:
 ```bash
-python3 -m src.download_openfoodfacts_sample
-python3 -m src.preprocess_openfoodfacts
-python3 -m src.kmeans_clustering
+python3 -m src.lab6_mongo_pipeline --bootstrap-if-empty
 ```
 
-### Полный пайплайн
-
+3) Проверить, что данные и результаты записаны в MongoDB:
 ```bash
-python3 -m src.run_pipeline
+python3 -m src.check_mongo_results
 ```
 
-## Почему выбраны эти фичи
+## Запуск полностью в Docker
 
-Использованы 6 числовых признаков на 100 г (`energy_kcal_100g`, `fat_100g`,
-`carbohydrates_100g`, `sugars_100g`, `proteins_100g`, `salt_100g`), потому что:
-- они доступны у большого числа продуктов;
-- это базовые пищевые характеристики, хорошо разделяющие категории продуктов;
-- признаки числовые и подходят для KMeans после масштабирования.
-
-## Артефакты
-
-- `data/processed/openfoodfacts_features.parquet`
-- `data/output/openfoodfacts_clusters.parquet`
-- `data/output/cluster_metrics.json`
-- `data/output/cluster_centers.json`
+```bash
+docker compose up --build model-pipeline
+```
 
 ## Дистрибутив
 
 ```bash
-python3 scripts/make_distribution.py
+python3 scripts/make_distribution.py --lab 6
 ```
 
-Архив: `dist/lab5_distribution.zip`.
+Архив: `dist/lab6_distribution.zip`.
