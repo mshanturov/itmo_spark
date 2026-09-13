@@ -1,49 +1,28 @@
-# ITMO Big Data Infrastructure — Lab 7 (Data Mart on Scala Spark)
+# ITMO Big Data Infrastructure — Lab 8 (Migration to Kubernetes)
 
-Лабораторная работа №7: интеграция схемы **модель → витрина данных → источник**.
-
-- Источник данных: MongoDB
-- Витрина данных: Scala + Spark (`datamart`)
-- Модель: PySpark KMeans (`src/kmeans_clustering.py`)
+Лабораторная работа №8: миграция контура
+**модель (ЛР5) — источник (ЛР6) — витрина (ЛР7)** в Kubernetes.
 
 ## Что реализовано
 
-1. Разработана витрина данных на Scala (Spark), которая:
-   - формирует запросы к MongoDB,
-   - выполняет предобработку,
-   - подготавливает единый формат данных для модели,
-   - загружает результаты модели обратно в MongoDB.
-2. Предобработка перенесена на сторону витрины.
-3. В модельном контуре ЛР7 используется только готовый датасет из витрины.
-4. Добавлен протокол взаимодействия и форматы хранения (`PROTOCOL_LAB7.md`).
-5. Добавлен Docker-контур для запуска `модель + витрина + источник`.
+- Kubernetes/Helm инфраструктура для Spark вычислений с репликацией worker-нод.
+- Поэтапный rollout:
+  1. запуск модели ЛР5 в k8s,
+  2. подключение источника MongoDB (ЛР6) и обновление model-контура,
+  3. подключение Scala Spark витрины (ЛР7) и финальная схема model-mart-source.
+- Единый runner для этапов миграции: `src/lab8_k8s_runner.py`.
+- Отдельный Docker image для k8s (`docker/lab8/Dockerfile`) с Python + Java + sbt.
+- Helm chart `helm/lab8-migration` для управления миграцией.
 
-## Структура
+## Основные каталоги
 
-### Scala витрина
-- `datamart/build.sbt`
-- `datamart/conf/datamart-local.conf`
-- `datamart/conf/datamart-docker.conf`
-- `datamart/src/main/scala/itmo/lab7/Main.scala`
-- `datamart/src/main/scala/itmo/lab7/service/DataMartService.scala`
-- `datamart/src/main/scala/itmo/lab7/mongo/MongoGateway.scala`
-- `datamart/src/main/scala/itmo/lab7/model/FeatureRecord.scala`
-- `datamart/src/main/scala/itmo/lab7/config/DataMartConfig.scala`
+- `src/` — модельные и orchestration скрипты.
+- `datamart/` — Scala Spark витрина данных.
+- `configs/` — app/spark/mongo/k8s конфигурация.
+- `helm/lab8-migration/` — Helm chart для поэтапной миграции.
+- `k8s/lab8/README.md` — практический rollout-гайд.
 
-### Python модель и orchestration
-- `src/lab7_mart_pipeline.py` — общий запуск ЛР7 пайплайна
-- `src/kmeans_clustering.py` — модель KMeans
-- `src/download_openfoodfacts_sample.py` — sample для bootstrap источника (при необходимости)
-
-### Конфиги
-- `configs/app_config.yaml` — модельные пути/параметры
-- `configs/spark_config.yaml` — Spark-конфиг модели
-- `configs/lab7_pipeline.yaml` — настройки orchestration
-- `configs/mongo_config.yaml` — MongoDB (локально)
-
-## Запуск локально
-
-### 1) Установка зависимостей
+## Локальная разработка
 
 ```bash
 python3 -m venv .venv
@@ -51,39 +30,72 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 2) Поднять MongoDB
-
+Проверка синтаксиса Python:
 ```bash
-docker compose up -d mongodb
+python3 -m compileall src
 ```
 
-### 3) Запустить ЛР7 пайплайн
-
+Проверка компиляции Scala витрины:
 ```bash
-python3 -m src.lab7_mart_pipeline --bootstrap-if-empty
+cd datamart
+sbt compile
 ```
 
-Если `sbt` не в `PATH`, можно задать путь так:
-```bash
-SBT_BIN=/path/to/sbt python3 -m src.lab7_mart_pipeline --bootstrap-if-empty
-```
-
-Что делает команда:
-- при необходимости подготавливает sample-файл для bootstrap;
-- запускает Scala витрину (`prepare`), которая забирает source, делает preprocessing и пишет parquet;
-- запускает модель KMeans на parquet;
-- запускает Scala витрину (`publish`), которая отправляет результаты модели в MongoDB.
-
-## Запуск в Docker
+## Сборка образа для Kubernetes
 
 ```bash
-docker compose -f docker-compose.lab7.yml up --build model-datamart-pipeline
+docker build -f docker/lab8/Dockerfile -t mshanturov/itmo-spark-platform:lab8 .
+docker push mshanturov/itmo-spark-platform:lab8
 ```
+
+## Поэтапная миграция в Kubernetes
+
+### Шаг 1 — Модель ЛР5
+
+```bash
+helm upgrade --install lab8 ./helm/lab8-migration \
+  -f ./helm/lab8-migration/values-lab5.yaml \
+  --set image.repository=mshanturov/itmo-spark-platform \
+  --set image.tag=lab8
+```
+
+### Шаг 2 — Источник ЛР6 + обновление модели
+
+```bash
+helm upgrade --install lab8 ./helm/lab8-migration \
+  -f ./helm/lab8-migration/values-lab6.yaml \
+  --set image.repository=mshanturov/itmo-spark-platform \
+  --set image.tag=lab8
+```
+
+### Шаг 3 — Витрина ЛР7 + обновление контура
+
+```bash
+helm upgrade --install lab8 ./helm/lab8-migration \
+  -f ./helm/lab8-migration/values-lab7.yaml \
+  --set image.repository=mshanturov/itmo-spark-platform \
+  --set image.tag=lab8
+```
+
+Проверка статуса:
+```bash
+kubectl get pods
+kubectl logs job/lab8-stage-runner
+kubectl get svc spark-master
+kubectl get statefulset mongodb
+```
+
+## Ресурсная оптимизация
+
+- Настраиваются `requests/limits` для runner, Spark master/worker, MongoDB.
+- Репликация Spark регулируется `spark.worker.replicas`.
+- Опционально включается HPA для worker-ов.
+- Для упрощения можно использовать `emptyDir`; для устойчивости — PVC.
 
 ## Дистрибутив
 
 ```bash
-python3 scripts/make_distribution.py --lab 7
+python3 scripts/make_distribution.py --lab 8
 ```
 
-Архив: `dist/lab7_distribution.zip`.
+Архив: `dist/lab8_distribution.zip`.

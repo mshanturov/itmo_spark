@@ -1,0 +1,54 @@
+stage: lab5
+
+image:
+  repository: mshanturov/itmo-spark-platform
+  tag: lab8
+  pullPolicy: IfNotPresent
+
+runner:
+  bootstrapIfEmpty: true
+  restartPolicy: Never
+  backoffLimit: 0
+
+spark:
+  master:
+    serviceType: ClusterIP
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "384Mi"
+      limits:
+        cpu: "500m"
+        memory: "768Mi"
+  worker:
+    replicas: 2
+    resources:
+      requests:
+        cpu: "300m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1024Mi"
+    autoscaling:
+      enabled: false
+      minReplicas: 2
+      maxReplicas: 4
+      targetCPUUtilizationPercentage: 70
+
+mongodb:
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "384Mi"
+    limits:
+      cpu: "600m"
+      memory: "768Mi"
+  persistence:
+    size: 2Gi
+    storageClassName: ""
+
+storage:
+  usePersistentVolume: false
+  persistentVolume:
+    size: 2Gi
+    storageClassName: ""

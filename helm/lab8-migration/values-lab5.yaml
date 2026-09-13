@@ -1,0 +1,6 @@
+stage: lab5
+spark:
+  worker:
+    replicas: 2
+runner:
+  bootstrapIfEmpty: false

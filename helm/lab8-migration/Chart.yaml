@@ -1,0 +1,6 @@
+apiVersion: v2
+name: lab8-migration
+description: Lab8 Kubernetes migration chart for model, source, and datamart services
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

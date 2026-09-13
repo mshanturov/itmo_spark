@@ -1,0 +1,20 @@
+{{- if .Values.spark.worker.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: spark-worker
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: spark-worker
+  minReplicas: {{ .Values.spark.worker.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.spark.worker.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.spark.worker.autoscaling.targetCPUUtilizationPercentage }}
+{{- end }}

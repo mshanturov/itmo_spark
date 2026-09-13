@@ -9,6 +9,8 @@ INCLUDE_PATHS = [
     "scripts",
     "configs",
     "datamart",
+    "helm",
+    "k8s",
     "docker",
     "notebooks",
     "Dockerfile",
@@ -30,7 +32,7 @@ def iter_files(base: Path):
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build zip distribution for selected lab")
-    parser.add_argument("--lab", default="6", help="Lab number for report and output file naming")
+    parser.add_argument("--lab", default="8", help="Lab number for report and output file naming")
     return parser.parse_args()
 
 

@@ -1,0 +1,14 @@
+{{- if .Values.storage.usePersistentVolume }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lab8-runner-data
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: {{ .Values.storage.persistentVolume.size }}
+{{- if .Values.storage.persistentVolume.storageClassName }}
+  storageClassName: {{ .Values.storage.persistentVolume.storageClassName | quote }}
+{{- end }}
+{{- end }}

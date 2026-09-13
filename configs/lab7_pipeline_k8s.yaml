@@ -1,0 +1,14 @@
+datamart:
+  project_dir: "datamart"
+  main_class: "itmo.lab7.Main"
+  local_config: "/app/datamart/conf/datamart-k8s.conf"
+  docker_config: "/app/datamart/conf/datamart-k8s.conf"
+
+model:
+  app_config: "configs/app_config.yaml"
+  spark_config: "configs/spark_config_k8s.yaml"
+
+bootstrap:
+  enabled_by_default: true
+  source_file: "data/raw/openfoodfacts_sample.jsonl"
+  source_lines: 12000
