@@ -9,6 +9,7 @@ INCLUDE_PATHS = [
     "scripts",
     "configs",
     "datamart",
+    "study_guides",
     "helm",
     "k8s",
     "docker",
